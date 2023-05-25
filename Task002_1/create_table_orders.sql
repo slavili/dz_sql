@@ -16,4 +16,4 @@ INSERT INTO orders (employee_id, amount, order_status) VALUES
 ('e01',25.50,'OPEN'),
 ('e05',100.70,'CLOSED'),
 ('e02',22.18,'OPEN'),
-('e04',9.50,'CANCELED');
+('e04',9.50,'CANCELLED');
