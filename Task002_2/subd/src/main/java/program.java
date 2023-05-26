@@ -1,15 +1,86 @@
+import com.google.protobuf.UnknownFieldSet;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class program {
     public static void main(String[] args) throws SQLException {
         ConnectDB dbOrders = new ConnectDB("localhost", 3306,"sql_dz_vvs","root","123qwe");
 
-        ResultSet rs = dbOrders.selectFromTable();
-        while(rs.next()){
-            int id = rs.getInt("ID");
-            String employee_id = rs.getString("employee_id");
-            System.out.printf("%d %s \n", id, employee_id);
+        System.out.println("help - показать команды управления");
+        System.out.println("insert - добавить новую статью");
+        System.out.println("delete - удалить статью");
+        System.out.println("update - обновление статьи");
+        System.out.println("select - показать список всех статей");
+        System.out.println("q - выход");
+
+        while(true) {
+            Scanner in = new Scanner(System.in);
+            System.out.print("Введите комманду: ");
+            String cmd = in.nextLine();
+            if (cmd.equals("select")) {
+                ResultSet rs = dbOrders.selectFromTable();
+                while(rs.next()){
+                    int id = rs.getInt("ID");
+                    String title = rs.getString("Title");
+                    String content = rs.getString("Content");
+                    System.out.printf("%d ### %s ### %s \n", id, title, content);
+                }
+            } else if (cmd.equals("insert")) {
+                String[] userArrayStrings = new String[2];
+                System.out.print("Наберите заголовок статьи: ");
+                userArrayStrings[0] = in.nextLine();
+                System.out.print("Наберите содержимое статьи: ");
+                userArrayStrings[1] = in.nextLine();
+                dbOrders.insertIntoTable(userArrayStrings);
+            } else if (cmd.equals("delete")) {
+                System.out.print("Введите идентификатор удаляемой статьи: ");
+                int id = Integer.parseInt(in.nextLine());
+                dbOrders.deleteFromTable(id);
+            } else if (cmd.equals("update")) {
+                String[] userArray = new String[3];
+                System.out.print("Введите идентификатор статьи, которую нужно исправить: ");
+                int idArticle = Integer.parseInt(in.nextLine());
+                ResultSet update = dbOrders.selectFromTable(idArticle);
+                if(update.next()){
+                    userArray[0] = Integer.toString(update.getInt("ID"));
+                    userArray[1] = update.getString("Title");
+                    userArray[2] = update.getString("Content");
+                    System.out.printf("Старый заголовок: %s \n", userArray[1]);
+                    System.out.print("Введите новый заголовок(если просто нажать Enter, то заголовок будет старым): ");
+                    String title = in.nextLine();
+                    if(!title.equals("")){
+                        userArray[1] = title;
+                    }
+                    System.out.printf("Старый контент: %s \n", userArray[2]);
+                    System.out.print("Введите новый контент(если просто нажать Enter, то контент будет старым): ");
+                    String content = in.nextLine();
+                    if(!content.equals("")){
+                        userArray[2] = content;
+                    }
+                    dbOrders.updateTable(userArray);
+                }
+                else {
+                    System.out.printf("Статьи с номером %d не существует \n", idArticle);
+                }
+            }  else if(cmd.equals("help")){
+                System.out.println("help - показать команды управления");
+                System.out.println("insert - добавить новую статью");
+                System.out.println("delete - удалить статью");
+                System.out.println("update - обновление статью");
+                System.out.println("select - показать список всех статью");
+                System.out.println("q - выход");
+            }  else if(cmd.equals("q")){
+                System.out.println("Работа с программой завершена!");
+                break;
+            }
+            else {
+                System.out.println("Неизвестная комманда!");
+            }
         }
+        dbOrders.closeConnection();
     }
 }
