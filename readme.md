@@ -70,5 +70,6 @@
 [Таблица к блоку ДОПЫ](https://drive.google.com/file/d/1PQn576YVakvlWrIgIjSP9YEf5id4cqYs/view?usp=sharing)
 
 1. Вывести на экран сколько машин каждого цвета для машин марок BMW и LADA (**1_dop_join_bmv_lada.sql**);
+2. Вывести на экран марку авто и количество AUTO не этой марки (**2_dop_join_auto.sql**).
 
 Решение данной задачи в каталоге **Task004**
