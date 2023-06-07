@@ -9,11 +9,10 @@ CREATE FUNCTION count_of_dhm(countOfSecond INT)
 RETURNS VARCHAR(255) DETERMINISTIC
 BEGIN
 
-	DECLARE tempResult VARCHAR(255);
-    DECLARE temp  INT;
+	DECLARE tempResult VARCHAR(255) DEFAULT "";
+    DECLARE temp  INT DEFAULT 86400; -- количество секунд в сутках
     DECLARE named VARCHAR(8);
-    SET tempResult = "";
-    SET temp = 86400;-- количество секунд в сутках
+    
     WHILE (temp>=1) DO
 		
         IF temp = 86400 THEN SET named = " days";
