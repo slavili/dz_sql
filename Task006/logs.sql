@@ -4,23 +4,7 @@ use vk;
 -- communities и messages в таблицу logs помещается время и дата создания записи, название таблицы,
 -- идентификатор первичного ключа.
 
-/*
-select * from users;
-select * from logs;
-
-delete from users where firstname = 'Иван';
-delete from communities where name = 'Общество любителей Ёжиков';
-delete from messages where id in (22,21);
-del
-select * from communities limit 2;
-select * from messages order by id desc limit 2;
-
-
-describe users;
-describe communities;
-describe messages;
-*/
-DROP TABLE IF EXISTS `logs`;
+-- DROP TABLE IF EXISTS `logs`;
 
 CREATE TABLE IF NOT EXISTS `logs`
 (
@@ -66,6 +50,16 @@ DELIMITER //
 
 CREATE PROCEDURE addLogs(userXML TEXT)
 BEGIN
+	DECLARE _rollback BIT DEFAULT 0;
+    DECLARE code_error VARCHAR(45);
+    DECLARE error_text VARCHAR(255);
+	DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+		SET _rollback = 1;
+        GET STACKED DIAGNOSTICS CONDITION 1
+		code_error = RETURNED_SQLSTATE, error_text = MESSAGE_TEXT;
+	END;
+
 	SET @tableXML = (select ExtractValue(userXML, '/root/tableName') as tname);    
     SET @SQLQuery = "";
 
@@ -76,13 +70,13 @@ BEGIN
 			SET @firstname = (SELECT ExtractValue(userXML, '/root/user/firstname'));
 			SET @lastname = (SELECT ExtractValue(userXML, '/root/user/lastname'));
 			SET @email = (SELECT ExtractValue(userXML, '/root/user/email'));
-			SET @SQLQuery = CONCAT("INSERT IGNORE INTO `users` (firstname, lastname, email) VALUES (?,?,?)");        
+			SET @SQLQuery = CONCAT("INSERT INTO `users` (firstname, lastname, email) VALUES (?,?,?)");        
 			PREPARE sqlStatement FROM @SQLQuery;
 			EXECUTE sqlStatement USING @firstname, @lastname, @email;
 			DEALLOCATE PREPARE sqlStatement;    
 		WHEN 'communities' THEN 
 			SET @nameCommunity = (SELECT ExtractValue(userXML, '/root/community/name'));
-			SET @SQLQuery = CONCAT("INSERT IGNORE INTO `communities` (name) VALUES (?)");
+			SET @SQLQuery = CONCAT("INSERT INTO `communities` (name) VALUES (?)");
 			PREPARE sqlStatement FROM @SQLQuery;
 			EXECUTE sqlStatement USING @nameCommunity;
 			DEALLOCATE PREPARE sqlStatement;  
@@ -90,21 +84,25 @@ BEGIN
 			SET @fromUserId = (SELECT ExtractValue(userXML, '/root/message/fromUserId'));
 			SET @toUserId = (SELECT ExtractValue(userXML, '/root/message/toUserId'));
 			SET @body = (SELECT ExtractValue(userXML, '/root/message/body'));
-			SET @SQLQuery = CONCAT("INSERT IGNORE INTO `messages` (from_user_id,to_user_id,body) VALUES (?,?,?)");
+			SET @SQLQuery = CONCAT("INSERT INTO `messages` (from_user_id,to_user_id,body) VALUES (?,?,?)");
 			PREPARE sqlStatement FROM @SQLQuery;
 			EXECUTE sqlStatement USING @fromUserId, @toUserId, @body;
 			DEALLOCATE PREPARE sqlStatement;      
 		END CASE;
-		-- select @SQLQuery;
-				
+
 		SET @LAST_INSERT_ID = LAST_INSERT_ID(); 
-		SET @SQLQuery = "INSERT IGNORE INTO `logs` (TableName, IdRecords) VALUES (?,?)";
+		SET @SQLQuery = "INSERT INTO `logs` (TableName, IdRecords) VALUES (?,?)";
 		
 		PREPARE sqlStatement FROM @SQLQuery;
 		EXECUTE sqlStatement USING @tableXML, @LAST_INSERT_ID;
 		DEALLOCATE PREPARE sqlStatement;
     
-    COMMIT;
+	IF _rollback = 1 THEN
+		SELECT CONCAT("Code of error: ", code_error, ", Message of error: ", error_text) AS `error`;
+        ROLLBACK;
+	ELSE
+        COMMIT;
+	END IF;
     
 END
 //
@@ -118,10 +116,3 @@ select * from logs;
 select * from users order by id desc limit 2;
 select * from communities order by id desc limit 2;
 select * from messages order by id desc limit 2;
-
-
-
-/*
-select ExtractValue(@userXml, '/root/tableName') as tname,
-	ExtractValue(@userXml, '/root/message') as msg ;
-    */
